@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sift WhatsApp</title>
+<style>
+:root{--bg:#f3f5f1;--card:#fff;--ink:#1b2a22;--mut:#5d6b63;--line:#d9dfd8;--accent:#0f6b4a;--accent-ink:#fff;--done:#e4ece6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a15;--card:#1a251e;--ink:#e8efe9;--mut:#93a39a;--line:#2d3b32;--accent:#3fbf8b;--accent-ink:#06261a;--done:#223229}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,Arial,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.6rem;margin:0 0 4px}
+p.sub{margin:0 0 20px;color:var(--mut)}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+h2{font-size:1.05rem;margin:0 0 4px}
+.hint{color:var(--mut);font-size:.88rem;margin:0 0 10px}
+textarea{width:100%;min-height:130px;border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit;background:var(--bg);color:var(--ink);resize:vertical}
+button,.btn{font:inherit;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+button.ghost,.btn.ghost{background:transparent;color:var(--accent)}
+button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+li.sent{background:var(--done);margin:0 -16px;padding:10px 16px}
+li .n{font-weight:600}li .p{color:var(--mut);font-size:.88rem;direction:ltr}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+.warn{font-size:.88rem;color:var(--mut);border-left:3px solid var(--accent);padding-left:10px}
+</style>
+</head>
+<body>
+<main>
+<h1>Sift WhatsApp</h1>
+<p class="sub">Message mpersonnalisé l kol client. Kol click kayft7 WhatsApp b message wajed, nta kat-sifto b yeddek.</p>
+
+<section>
+<h2>1. Contacts</h2>
+<p class="hint">Wahed f kol ster: smiya w numéro (b ; wla , wla tab). Mathalan: Karim;0612345678. Wla khtar fichier CSV.</p>
+<textarea id="contacts" placeholder="Karim;0612345678&#10;Salma;0661234567"></textarea>
+<div class="row"><input type="file" id="file" accept=".csv,.txt"></div>
+</section>
+
+<section>
+<h2>2. Message</h2>
+<p class="hint">Dir {smiya} blast smiya dyal l-client. Ila bghiti bzaf dyal variantes, 7ett ster fih --- bin kol variante w ghadi tkhtar wahda 3chwa2iyan.</p>
+<textarea id="msg">Salam {smiya}, 3endna 3ard jdid had l-simana. Ila bghiti t3ref ktar, jaweb liya.</textarea>
+<div class="row"><button id="go">Wajed la liste</button><button class="ghost" id="reset">Bda men jdid</button></div>
+</section>
+
+<section>
+<h2>3. Sift</h2>
+<div id="stat" class="hint">Mazal ma-wajdna 7ta liste.</div>
+<div class="bar"><i id="bar"></i></div>
+<ul id="list"></ul>
+<p class="warn">Sift b rwa7a: 3chwa tssnna chi tawakkof bin kol message, w sift ghir l nass li kay-3arfouk w wafqou.</p>
+</section>
+</main>
+<script>
+var KEY="sift-wa-v1",state={items:[]};
+function load(){try{var s=localStorage.getItem(KEY);if(s)state=JSON.parse(s)}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+function norm(p){var d=String(p).replace(/[^\d]/g,"");if(d.indexOf("00")===0)d=d.slice(2);
+ if(/^0[5-7]\d{8}$/.test(d))d="212"+d.slice(1);return d}
+function parse(txt){var out=[];txt.split(/\r?\n/).forEach(function(l){l=l.trim();if(!l)return;
+ var parts=l.split(/[;,\t]/);if(parts.length<2)return;
+ var n=parts[0].replace(/^["']|["']$/g,"").trim(),p=norm(parts[1]);
+ if(p.length>=9)out.push({n:n,p:p,sent:false})});return out}
+function variants(){return document.getElementById("msg").value.split(/\n\s*---\s*\n/).map(function(s){return s.trim()}).filter(Boolean)}
+function build(){var v=variants();if(!v.length)return;
+ state.items.forEach(function(it){if(!it.text){it.text=v[Math.floor(Math.random()*v.length)].split("{smiya}").join(it.n)}})}
+function render(){var ul=document.getElementById("list");ul.innerHTML="";var done=0;
+ state.items.forEach(function(it,i){if(it.sent)done++;
+  var li=document.createElement("li");if(it.sent)li.className="sent";
+  var d=document.createElement("div");d.innerHTML='<div class="n"></div><div class="p"></div>';
+  d.firstChild.textContent=it.n;d.lastChild.textContent="+"+it.p;
+  var a=document.createElement("a");a.className="btn"+(it.sent?" ghost":"");a.target="_blank";a.rel="noopener";
+  a.href="https://wa.me/"+it.p+"?text="+encodeURIComponent(it.text||"");
+  a.textContent=it.sent?"Sift men jdid":"Sift";
+  a.addEventListener("click",function(){it.sent=true;save();setTimeout(render,300)});
+  li.appendChild(d);li.appendChild(a);ul.appendChild(li)});
+ var t=state.items.length;
+ document.getElementById("stat").textContent=t?(done+" men "+t+" tsiftou"):"Mazal ma-wajdna 7ta liste.";
+ document.getElementById("bar").style.width=t?(done/t*100)+"%":"0"}
+document.getElementById("go").onclick=function(){
+ var items=parse(document.getElementById("contacts").value);
+ if(!items.length){alert("Ma-l9ina 7ta numéro s7i7. Dir: smiya;numéro f kol ster.");return}
+ if(!variants().length){alert("Kteb message qbel.");return}
+ state={items:items};build();save();render()};
+document.getElementById("reset").onclick=function(){state={items:[]};save();render()};
+document.getElementById("file").onchange=function(e){var f=e.target.files[0];if(!f)return;
+ var r=new FileReader();r.onload=function(){document.getElementById("contacts").value=r.result};r.readAsText(f)};
+load();render();
+</script>
+</body>
+</html>
